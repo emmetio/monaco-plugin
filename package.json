@@ -1,0 +1,23 @@
+{
+  "name": "@emmetio/monaco-plugin",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Sergey Chikuyonok <serge.che@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "@emmetio/action-utils": "^1.2.1",
+    "emmet": "^2.1.6"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^10.0.0",
+    "monaco-editor": "^0.21.2",
+    "rollup": "^2.32.1",
+    "tslib": "^2.0.3",
+    "typescript": "^4.0.5"
+  }
+}
