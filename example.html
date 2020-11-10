@@ -17,17 +17,18 @@
     <h1>Emmet plugin for Monaco editor</h1>
     <div id="editor"></div>
     <script>
-        var require = { paths: { vs: './node_modules/monaco-editor/min/vs' } };
+        var require = { paths: { vs: './node_modules/monaco-editor/dev/vs' } };
     </script>
-    <script src="./node_modules/monaco-editor/min/vs/loader.js"></script>
-    <script src="./node_modules/monaco-editor/min/vs/editor/editor.main.nls.js"></script>
-    <script src="./node_modules/monaco-editor/min/vs/editor/editor.main.js"></script>
+    <script src="./node_modules/monaco-editor/dev/vs/loader.js"></script>
+    <script src="./node_modules/monaco-editor/dev/vs/editor/editor.main.nls.js"></script>
+    <script src="./node_modules/monaco-editor/dev/vs/editor/editor.main.js"></script>
 
     <script>
         var editor = monaco.editor.create(document.getElementById('editor'), {
             value: '',
             language: 'html'
         });
+        console.log(editor.getContribution('snippetController2'));
     </script>
 </body>
 </html>
