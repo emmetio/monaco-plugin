@@ -22,13 +22,14 @@
     <script src="./node_modules/monaco-editor/dev/vs/loader.js"></script>
     <script src="./node_modules/monaco-editor/dev/vs/editor/editor.main.nls.js"></script>
     <script src="./node_modules/monaco-editor/dev/vs/editor/editor.main.js"></script>
+    <script src="./dist/emmet.browser.js"></script>
 
     <script>
         var editor = monaco.editor.create(document.getElementById('editor'), {
             value: '',
             language: 'html'
         });
-        console.log(editor.getContribution('snippetController2'));
+        emmet(editor);
     </script>
 </body>
 </html>

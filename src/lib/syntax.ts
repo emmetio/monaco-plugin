@@ -1,10 +1,10 @@
-import * as monaco from 'monaco-editor';
 import { SyntaxType, CSSAbbreviationScope, AbbreviationContext } from 'emmet';
 import { TokenType } from '@emmetio/css-matcher';
 import { attributes } from '@emmetio/html-matcher';
 import { CSSContext, HTMLContext, getHTMLContext, getCSSContext } from '@emmetio/action-utils';
 import { EnableForSyntax } from './config';
 import { getContent, last, attributeValue } from './utils';
+import { Editor } from './types';
 
 const xmlSyntaxes = ['xml', 'xsl', 'jsx'];
 const htmlSyntaxes = ['html', 'vue'];
@@ -39,7 +39,7 @@ export interface SyntaxCache {
  * returns `null`, but if `fallback` argument is provided, it returns data for
  * given fallback syntax
  */
-export function syntaxInfo(editor: monaco.editor.IStandaloneCodeEditor, pos: number): SyntaxInfo {
+export function syntaxInfo(editor: Editor, pos: number): SyntaxInfo {
     let syntax = docSyntax(editor);
     let inline: boolean | undefined;
     let context: HTMLContext | CSSContext | undefined;
@@ -71,7 +71,7 @@ export function syntaxInfo(editor: monaco.editor.IStandaloneCodeEditor, pos: num
 /**
  * Returns main editor syntax
  */
-export function docSyntax(editor: monaco.editor.IStandaloneCodeEditor): string {
+export function docSyntax(editor: Editor): string {
     const model = editor.getModel();
     return model ? model.getModeId() : '';
 }

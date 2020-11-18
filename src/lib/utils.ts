@@ -1,7 +1,7 @@
 import * as monaco from 'monaco-editor';
 import { AttributeToken } from '@emmetio/html-matcher';
 import { CSSProperty, TextRange } from '@emmetio/action-utils';
-import { PluginID, Editor, MonacoID, SnippetController2 } from './types';
+import { Editor, MonacoID, SnippetController2 } from './types';
 
 export interface AbbrError {
     message: string,
@@ -44,13 +44,17 @@ export function narrowToNonSpace(editor: Editor, range: TextRange): TextRange {
  * Replaces given range in editor with snippet contents
  */
 export function replaceWithSnippet(editor: Editor, range: TextRange, snippet: string): void {
-    editor.executeEdits(PluginID, [{
-        range: toRange(editor, range),
-        text: ''
-    }]);
+    console.log('remove range', range, toRange(editor, range));
+
+    // editor.executeEdits(PluginID, [{
+    //     range: toRange(editor, range),
+    //     text: ''
+    // }]);
 
     const controller = editor.getContribution(MonacoID.SnippetController) as SnippetController2;
-    controller.insert(snippet);
+    controller.insert(snippet, {
+        overwriteBefore: range[1] - range[0]
+    });
 }
 
 /**
@@ -78,6 +82,21 @@ export function getContent(editor: Editor): string {
  */
 export function substr(editor: Editor, range: TextRange): string {
     return editor.getModel()!.getValueInRange(toRange(editor, range));
+}
+
+/**
+ * Returns range of line at given location
+ */
+export function getLineRange(editor: Editor, pos: number): TextRange {
+    const model = editor.getModel()!;
+    const mPos = model.getPositionAt(pos);
+    const startCol = model.getLineMinColumn(mPos.lineNumber);
+    const endCol = model.getLineMaxColumn(mPos.lineNumber);
+
+    return [
+        model.getOffsetAt({ column: startCol, lineNumber: mPos.lineNumber }),
+        model.getOffsetAt({ column: endCol, lineNumber: mPos.lineNumber }),
+    ]
 }
 
 /**

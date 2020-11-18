@@ -4,13 +4,13 @@ import { isHTML, docSyntax } from './syntax';
 import type { Editor } from './types';
 
 export default function getOutputOptions(editor: Editor, pos?: number, inline?: boolean): Partial<Options> {
-    const model = editor.getModel()!;
-    const posObj = pos != null ? model.getPositionAt(pos)! : editor.getPosition()!;
+    // const model = editor.getModel()!;
+    // const posObj = pos != null ? model.getPositionAt(pos)! : editor.getPosition()!;
     const syntax = docSyntax(editor) || 'html';
     const config = getEmmetConfig();
 
     const opt: Partial<Options> = {
-        'output.baseIndent': lineIndent(editor, posObj.lineNumber),
+        // 'output.baseIndent': lineIndent(editor, posObj.lineNumber),
         'output.indent': getIndentation(editor),
         'output.field': field,
         'output.format': !inline,
