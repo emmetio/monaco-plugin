@@ -1,4 +1,4 @@
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 import { AttributeToken } from '@emmetio/html-matcher';
 import { CSSProperty, TextRange } from '@emmetio/action-utils';
 import { Editor, MonacoID, SnippetController2 } from './types';
@@ -44,13 +44,6 @@ export function narrowToNonSpace(editor: Editor, range: TextRange): TextRange {
  * Replaces given range in editor with snippet contents
  */
 export function replaceWithSnippet(editor: Editor, range: TextRange, snippet: string): void {
-    console.log('remove range', range, toRange(editor, range));
-
-    // editor.executeEdits(PluginID, [{
-    //     range: toRange(editor, range),
-    //     text: ''
-    // }]);
-
     const controller = editor.getContribution(MonacoID.SnippetController) as SnippetController2;
     controller.insert(snippet, {
         overwriteBefore: range[1] - range[0]
@@ -112,6 +105,26 @@ export function toRange(editor: Editor, range: TextRange): monaco.IRange {
         startLineNumber: from.lineNumber,
         endColumn: to.column,
         endLineNumber: to.lineNumber,
+    };
+}
+
+export function toTextRange(editor: Editor, range: monaco.IRange): TextRange {
+    const model = editor.getModel()!;
+    return [
+        model.getOffsetAt({ column: range.startColumn, lineNumber: range.startLineNumber }),
+        model.getOffsetAt({ column: range.endColumn, lineNumber: range.endLineNumber })
+    ];
+}
+
+/**
+ * Converts given Monaco range to selection object
+ */
+export function rangeToSelection(range: monaco.IRange): monaco.ISelection {
+    return {
+        selectionStartColumn: range.startColumn,
+        selectionStartLineNumber: range.startLineNumber,
+        positionColumn: range.endColumn,
+        positionLineNumber: range.endLineNumber
     };
 }
 
@@ -210,22 +223,92 @@ export function htmlEscape(str: string): string {
 /**
  * Check if `a` and `b` contains the same range
  */
-export function rangesEqual(a: TextRange, b: TextRange): boolean {
+export function textRangesEqual(a: TextRange, b: TextRange): boolean {
     return a[0] === b[0] && a[1] === b[1];
+}
+
+/**
+ * Check if `a` and `b` contains the same range
+ */
+export function rangesEqual(a: monaco.IRange, b: monaco.IRange): boolean {
+    return compareStart(a, b) === 0
+        && compareEnd(a, b) === 0;
 }
 
 /**
  * Check if range `a` fully contains range `b`
  */
-export function rangeContains(a: TextRange, b: TextRange): boolean {
+export function textRangeContains(a: TextRange, b: TextRange): boolean {
     return a[0] <= b[0] && a[1] >= b[1];
+}
+
+/**
+ * Check if range `a` fully contains range `b`
+ */
+export function rangeContains(a: monaco.IRange, b: monaco.IRange): boolean {
+    return compareStart(a, b) <= 0
+        && compareEnd(a, b) >= 0;
 }
 
 /**
  * Check if given range is empty
  */
-export function rangeEmpty(r: TextRange): boolean {
+export function textRangeEmpty(r: TextRange): boolean {
     return r[0] === r[1];
+}
+
+/**
+ * Check if given range is empty
+ */
+export function rangeEmpty(r: monaco.IRange): boolean {
+    return r.startColumn === r.endColumn
+        && r.startLineNumber === r.endLineNumber;
+}
+
+/**
+ * Compares start edge of given ranges.
+ * Returned values:
+ * `-1`: `a` is less than `b`
+ * `0`: `a` equals to `b`
+ * `1`: `a` is greater than `b`
+ */
+export function compareStart(a: monaco.IRange, b: monaco.IRange): number {
+    return comparePositions(a.startColumn, a.startLineNumber, b.startColumn, b.endLineNumber);
+}
+
+/**
+ * Compares end edge of given ranges.
+ * Returned values:
+ * `-1`: `a` is less than `b`
+ * `0`: `a` equals to `b`
+ * `1`: `a` is greater than `b`
+ */
+export function compareEnd(a: monaco.IRange, b: monaco.IRange): number {
+    return comparePositions(a.endColumn, a.endLineNumber, b.endColumn, b.endLineNumber);
+}
+
+/**
+ * Compares logical position of text locations
+ * Returned values:
+ * `-1`: `a` is less than `b`
+ * `0`: `a` equals `b`
+ * `1`: `a` is greater than `b`
+ */
+export function comparePositions(aColumn: number, aLine: number, bColumn: number, bLine: number): number {
+    if (aLine < bLine) {
+        return -1;
+    }
+
+    if (aLine > bLine) {
+        return 1;
+    }
+
+    // Ranges are on the same line
+    if (aColumn === bColumn) {
+        return 0;
+    }
+
+    return aColumn < bColumn ? -1 : 1;
 }
 
 /**
