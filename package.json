@@ -2,11 +2,14 @@
   "name": "@emmetio/monaco-plugin",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "./dist/emmet.cjs.js",
+  "module": "./dist/emmet.es.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -wc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "npm run build"
   },
   "keywords": [],
   "author": "Sergey Chikuyonok <serge.che@gmail.com>",
