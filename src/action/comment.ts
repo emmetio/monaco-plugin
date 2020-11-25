@@ -2,8 +2,9 @@ import Scanner from '@emmetio/scanner';
 import { scan, createOptions, ElementType, ScannerOptions } from '@emmetio/html-matcher';
 import matchCSS from '@emmetio/css-matcher';
 import { TextRange } from '@emmetio/action-utils';
-import { isSpace, getContent, narrowToNonSpace, textRange, rangeEmpty, substr, toRange } from '../lib/utils';
+import { isSpace, getContent, narrowToNonSpace, toTextRange, substr, toRange, textRangeEmpty, getLineRange } from '../lib/utils';
 import { isHTML, isXML, isCSS, syntaxInfo } from '../lib/syntax';
+import { Editor } from '../lib/types';
 
 interface Block {
     range: TextRange;
@@ -22,11 +23,13 @@ type CommentTokens = [string, string];
 const htmlComment: CommentTokens = ['<!--', '-->'];
 const cssComment: CommentTokens = ['/*', '*/'];
 
-export default function comment(editor: CodeMirror.Editor) {
-    const selection = editor.listSelections().slice().reverse();
-    editor.operation(() => {
-        for (const sel of selection) {
-            const selRange = textRange(editor, sel);
+export default function comment(editor: Editor): void {
+    const model = editor.getModel();
+    let selections = editor.getSelections();
+    if (model && selections) {
+        selections = selections.slice().reverse();
+        for (const sel of selections) {
+            const selRange = toTextRange(editor, sel);
             const { syntax } = syntaxInfo(editor, selRange[0]);
             const tokens = syntax && isCSS(syntax) ? cssComment : htmlComment;
             const block = getRangeForComment(editor, selRange[0]);
@@ -34,7 +37,7 @@ export default function comment(editor: CodeMirror.Editor) {
             if (block && block.commentStart) {
                 // Caret inside comment, strip it
                 removeComment(editor, block);
-            } else if (block && rangeEmpty(selRange)) {
+            } else if (block && textRangeEmpty(selRange)) {
                 // Wrap block with comments but remove inner comments first
                 let removed = 0;
                 for (const c of getCommentRegions(editor, block.range, tokens).reverse()) {
@@ -42,27 +45,22 @@ export default function comment(editor: CodeMirror.Editor) {
                 }
 
                 addComment(editor, [block.range[0], block.range[1] - removed], tokens);
-            } else if (!rangeEmpty(selRange)) {
+            } else if (!textRangeEmpty(selRange)) {
                 // No matching block, comment selection
                 addComment(editor, selRange, tokens);
             } else {
                 // No matching block, comment line
-
-                const line = editor.getLine(sel.anchor.line);
-                const lineRange = textRange(editor, {
-                    anchor: { line: sel.anchor.line, ch: 0 },
-                    head: { line: sel.anchor.line, ch: line.length },
-                })
+                const lineRange = getLineRange(editor, selRange[0]);
                 addComment(editor, narrowToNonSpace(editor, lineRange), tokens);
             }
         }
-    });
+    }
 }
 
 /**
  * Removes comment markers from given region. Returns amount of characters removed
  */
-function removeComment(editor: CodeMirror.Editor, { range, commentStart, commentEnd }: Block): number {
+function removeComment(editor: Editor, { range, commentStart, commentEnd }: Block): number {
     const text = substr(editor, range);
 
     if (commentStart && text.startsWith(commentStart)) {
@@ -80,10 +78,13 @@ function removeComment(editor: CodeMirror.Editor, { range, commentStart, comment
             endOffset += 1;
         }
 
-        const r1 = toRange(editor, [range[1] - endOffset, range[1]]);
-        const r2 = toRange(editor, [range[0], range[0] + startOffset]);
-        editor.replaceRange('', r1[0], r1[1]);
-        editor.replaceRange('', r2[0], r2[1]);
+        editor.executeEdits(null, [{
+            range: toRange(editor, [range[1] - endOffset, range[1]]),
+            text: ''
+        }, {
+            range: toRange(editor, [range[0], range[0] + startOffset]),
+            text: ''
+        }]);
 
         return startOffset + endOffset;
     }
@@ -94,19 +95,24 @@ function removeComment(editor: CodeMirror.Editor, { range, commentStart, comment
 /**
  * Adds comments around given range
  */
-function addComment(editor: CodeMirror.Editor, range: TextRange, tokens: CommentTokens) {
-    const [from, to] = toRange(editor, range);
-    editor.replaceRange(' ' + tokens[1], to, to);
-    editor.replaceRange(tokens[0] + ' ', from, from);
+function addComment(editor: Editor, range: TextRange, tokens: CommentTokens): void {
+    const [from, to] = range;
+    editor.executeEdits(null, [{
+        range: toRange(editor, [to, to]),
+        text: ' ' + tokens[1]
+    }, {
+        range: toRange(editor, [from, from]),
+        text: tokens[0] + ' '
+    }])
 }
 
 /**
  * Finds comments inside given region and returns their regions
  */
-function getCommentRegions(editor: CodeMirror.Editor, range: TextRange, tokens: CommentTokens): Block[] {
+function getCommentRegions(editor: Editor, range: TextRange, tokens: CommentTokens): Block[] {
     const result: Block[] = [];
     const text = substr(editor, range);
-    let start = range[0];
+    const start = range[0];
     let offset = 0
 
     while (true) {
@@ -132,8 +138,10 @@ function getCommentRegions(editor: CodeMirror.Editor, range: TextRange, tokens: 
     return result;
 }
 
-function getRangeForComment(editor: CodeMirror.Editor, pos: number): Block | undefined {
-    const { syntax } = syntaxInfo(editor, pos);
+function getRangeForComment(editor: Editor, pos: number): Block | undefined {
+    const info = syntaxInfo(editor, pos);
+    const { syntax, context } = info;
+
     if (!syntax) {
         return;
     }
@@ -143,16 +151,29 @@ function getRangeForComment(editor: CodeMirror.Editor, pos: number): Block | und
     }
 
     if (isCSS(syntax)) {
-        const content = getContent(editor);
-        const comment = findCSSComment(content, pos);
+        let offset = 0;
+        let content = '';
+        if (context?.type === 'css' && context.embedded) {
+            // It’s an embedded CSS, use embedded content instead of full document
+            // content
+            content = substr(editor, context.embedded);
+            offset = context.embedded[0];
+        } else {
+            content = getContent(editor);
+        }
+
+        const comment = findCSSComment(content, pos - offset);
         if (comment) {
+            comment.range[0] += offset;
+            comment.range[1] += offset;
             return comment;
         }
 
-        const css = matchCSS(content, pos);
+        const css = matchCSS(content, pos - offset);
+
         if (css) {
             return {
-                range: [css.start, css.end]
+                range: [css.start + offset, css.end + offset]
             };
         }
     }
@@ -224,7 +245,7 @@ function findCSSComment(code: string, pos: number): Block | undefined {
         Backslash = 92,
         LF = 10,
         CR = 13,
-    };
+    }
     const scanner = new Scanner(code);
 
     while (!scanner.eof() && pos > scanner.pos) {

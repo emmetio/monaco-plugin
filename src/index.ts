@@ -3,6 +3,7 @@ import type * as monaco from 'monaco-editor';
 import { KeyCode } from './lib/keycode';
 import expandAction from './action/expand-abbreviation';
 import { balanceActionInward, balanceActionOutward } from './action/balance';
+import commentAction from './action/comment';
 
 // TODO find better solution to re-use Monaco keys but not re-export entire bundle
 const enum KeyMod {
@@ -33,5 +34,12 @@ export default function emmetPlugin(editor: monaco.editor.IStandaloneCodeEditor)
         label: 'Emmet: Balance Outward',
         keybindings: [KeyMod.Ctrl | KeyCode.KEY_D],
         run: balanceActionOutward
+    });
+
+    editor.addAction({
+        id: 'emmet.comment',
+        label: 'Emmet: Toggle Comment',
+        keybindings: [KeyMod.Ctrl | KeyCode.KEY_J],
+        run: commentAction
     });
 }

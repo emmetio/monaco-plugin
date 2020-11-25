@@ -24,12 +24,34 @@
     <script src="./node_modules/monaco-editor/dev/vs/editor/editor.main.js"></script>
     <script src="./dist/emmet.browser.js"></script>
 
-    <script>
-        var editor = monaco.editor.create(document.getElementById('editor'), {
-            value: '',
-            language: 'html'
-        });
-        emmet(editor);
-    </script>
+<script>
+const code = `<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+    <style>
+        body {
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+	<ul>
+		<li><a href=""></a></li>
+		<li><a href=""></a></li>
+		<li><a href=""></a></li>
+		<li><a href=""></a></li>
+	</ul>
+</body>
+</html>
+`;
+var editor = monaco.editor.create(document.getElementById('editor'), {
+    value: code,
+    language: 'html'
+});
+emmet(editor);
+</script>
 </body>
 </html>
