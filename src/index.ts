@@ -4,6 +4,7 @@ import { KeyCode } from './lib/keycode';
 import expandAction from './action/expand-abbreviation';
 import { balanceActionInward, balanceActionOutward } from './action/balance';
 import commentAction from './action/comment';
+import evaluateMathAction from './action/evaluate-math';
 
 // TODO find better solution to re-use Monaco keys but not re-export entire bundle
 const enum KeyMod {
@@ -41,5 +42,12 @@ export default function emmetPlugin(editor: monaco.editor.IStandaloneCodeEditor)
         label: 'Emmet: Toggle Comment',
         keybindings: [KeyMod.Ctrl | KeyCode.KEY_J],
         run: commentAction
+    });
+
+    editor.addAction({
+        id: 'emmet.evaluate-math',
+        label: 'Emmet: Evaluate Math Expression',
+        keybindings: [KeyMod.Ctrl | KeyCode.KEY_Y],
+        run: evaluateMathAction
     });
 }
