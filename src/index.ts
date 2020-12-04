@@ -9,6 +9,7 @@ import goToEditPointAction from './action/go-to-edit-point';
 import goToTagPairAction from './action/go-to-tag-pair';
 import incrementNumberAction from './action/inc-dec-number';
 import removeTagAction from './action/remove-tag';
+import selectItemAction from './action/select-item';
 
 // TODO find better solution to re-use Monaco keys but not re-export entire bundle
 const enum KeyMod {
@@ -139,5 +140,23 @@ export default function emmetPlugin(editor: monaco.editor.IStandaloneCodeEditor)
         label: 'Emmet: Remove tag',
         keybindings: [KeyMod.Ctrl | KeyCode.US_QUOTE],
         run: removeTagAction
+    });
+
+    editor.addAction({
+        id: 'emmet.select-next-item',
+        label: 'Emmet: Select Next Item',
+        keybindings: [KeyMod.Ctrl | KeyMod.Shift | KeyCode.RightArrow],
+        run(editor) {
+            selectItemAction(editor, false);
+        }
+    });
+
+    editor.addAction({
+        id: 'emmet.select-previous-item',
+        label: 'Emmet: Select Previous Item',
+        keybindings: [KeyMod.Ctrl | KeyMod.Shift | KeyCode.LeftArrow],
+        run(editor) {
+            selectItemAction(editor, true);
+        }
     });
 }
