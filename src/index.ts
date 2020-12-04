@@ -7,6 +7,7 @@ import commentAction from './action/comment';
 import evaluateMathAction from './action/evaluate-math';
 import goToEditPointAction from './action/go-to-edit-point';
 import goToTagPairAction from './action/go-to-tag-pair';
+import incrementNumberAction from './action/inc-dec-number';
 
 // TODO find better solution to re-use Monaco keys but not re-export entire bundle
 const enum KeyMod {
@@ -76,5 +77,59 @@ export default function emmetPlugin(editor: monaco.editor.IStandaloneCodeEditor)
         label: 'Emmet: Go to Tag Pair',
         keybindings: [KeyMod.Ctrl | KeyCode.KEY_G],
         run: goToTagPairAction
+    });
+
+    editor.addAction({
+        id: 'emmet.increment-number1',
+        label: 'Emmet: Increment number by 1',
+        // keybindings: [KeyMod.Ctrl | KeyCode.UpArrow],
+        run(editor) {
+            incrementNumberAction(editor, 1);
+        }
+    });
+
+    editor.addAction({
+        id: 'emmet.decrement-number1',
+        label: 'Emmet: Decrement number by 1',
+        // keybindings: [KeyMod.Ctrl | KeyCode.DownArrow],
+        run(editor) {
+            incrementNumberAction(editor, -1);
+        }
+    });
+
+    editor.addAction({
+        id: 'emmet.increment-number1',
+        label: 'Emmet: Increment number by 0.1',
+        // keybindings: [KeyMod.Ctrl | KeyCode.UpArrow],
+        run(editor) {
+            incrementNumberAction(editor, .1);
+        }
+    });
+
+    editor.addAction({
+        id: 'emmet.decrement-number1',
+        label: 'Emmet: Decrement number by 0.1',
+        // keybindings: [KeyMod.Ctrl | KeyCode.DownArrow],
+        run(editor) {
+            incrementNumberAction(editor, -.1);
+        }
+    });
+
+    editor.addAction({
+        id: 'emmet.increment-number1',
+        label: 'Emmet: Increment number by 10',
+        // keybindings: [KeyMod.Ctrl | KeyCode.UpArrow],
+        run(editor) {
+            incrementNumberAction(editor, 10);
+        }
+    });
+
+    editor.addAction({
+        id: 'emmet.decrement-number1',
+        label: 'Emmet: Decrement number by 10',
+        // keybindings: [KeyMod.Ctrl | KeyCode.DownArrow],
+        run(editor) {
+            incrementNumberAction(editor, -10);
+        }
     });
 }

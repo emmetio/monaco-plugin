@@ -1,38 +1,48 @@
+import type * as monaco from 'monaco-editor';
 import { isNumber } from '@emmetio/scanner';
-import { textRange, rangeEmpty, substr, replaceWithSnippet } from '../lib/utils';
+import { Editor } from '../lib/types';
 
-export default function incrementNumber(editor: CodeMirror.Editor, delta = 1) {
-    editor.operation(() => {
-        const nextRanges = editor.listSelections().slice().reverse().map(sel => {
-            let selRange = textRange(editor, sel);
-            if (rangeEmpty(selRange)) {
-                // No selection, extract number
-                const line = editor.getLine(sel.anchor.line);
-                const offset = sel.anchor.ch;
-                const numRange = extractNumber(line, offset);
-                if (numRange) {
-                    selRange = [
-                        selRange[0] - offset + numRange[0],
-                        selRange[0] - offset + numRange[1],
-                    ]
-                }
+export default function incrementNumber(editor: Editor, delta = 1): void {
+    const edits: monaco.editor.IIdentifiedSingleEditOperation[] = [];
+
+    const sels = editor.getSelections();
+    const model = editor.getModel();
+    if (!sels || !model) {
+        return;
+    }
+
+    const nextSelections: monaco.Selection[] = sels.map(sel => {
+        if (sel.isEmpty()) {
+            // No selection, extract number
+            const line = model.getLineContent(sel.startLineNumber);
+            const offset = sel.startColumn - 1;
+            const numRange = extractNumber(line, offset);
+            console.log('num range', numRange);
+
+            if (numRange) {
+                sel = sel.setStartPosition(sel.startLineNumber, numRange[0] + 1);
+                sel = sel.setEndPosition(sel.endLineNumber, numRange[1] + 1);
+                console.log('modified sel', sel);
             }
+        }
 
-            if (!rangeEmpty(selRange)) {
-                // Try to update value in given region
-                let value = updateNumber(substr(editor, selRange), delta);
-                replaceWithSnippet(editor, selRange, value);
-                sel = {
-                    anchor: editor.posFromIndex(selRange[0]),
-                    head: editor.posFromIndex(selRange[0] + value.length)
-                };
-            }
+        if (!sel.isEmpty()) {
+            // Try to update value in given region
+            const value = updateNumber(model.getValueInRange(sel), delta);
+            edits.push({
+                range: sel,
+                text: value,
+            });
 
-            return sel;
-        });
+            sel = sel.setEndPosition(sel.endLineNumber, sel.startColumn + value.length);
+        }
 
-        editor.setSelections(nextRanges);
+        return sel;
     });
+
+    if (edits.length) {
+        editor.executeEdits(null, edits, nextSelections);
+    }
 }
 
 /**
