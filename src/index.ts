@@ -8,6 +8,7 @@ import evaluateMathAction from './action/evaluate-math';
 import goToEditPointAction from './action/go-to-edit-point';
 import goToTagPairAction from './action/go-to-tag-pair';
 import incrementNumberAction from './action/inc-dec-number';
+import removeTagAction from './action/remove-tag';
 
 // TODO find better solution to re-use Monaco keys but not re-export entire bundle
 const enum KeyMod {
@@ -98,7 +99,7 @@ export default function emmetPlugin(editor: monaco.editor.IStandaloneCodeEditor)
     });
 
     editor.addAction({
-        id: 'emmet.increment-number1',
+        id: 'emmet.increment-number01',
         label: 'Emmet: Increment number by 0.1',
         // keybindings: [KeyMod.Ctrl | KeyCode.UpArrow],
         run(editor) {
@@ -107,7 +108,7 @@ export default function emmetPlugin(editor: monaco.editor.IStandaloneCodeEditor)
     });
 
     editor.addAction({
-        id: 'emmet.decrement-number1',
+        id: 'emmet.decrement-number01',
         label: 'Emmet: Decrement number by 0.1',
         // keybindings: [KeyMod.Ctrl | KeyCode.DownArrow],
         run(editor) {
@@ -116,7 +117,7 @@ export default function emmetPlugin(editor: monaco.editor.IStandaloneCodeEditor)
     });
 
     editor.addAction({
-        id: 'emmet.increment-number1',
+        id: 'emmet.increment-number10',
         label: 'Emmet: Increment number by 10',
         // keybindings: [KeyMod.Ctrl | KeyCode.UpArrow],
         run(editor) {
@@ -125,11 +126,18 @@ export default function emmetPlugin(editor: monaco.editor.IStandaloneCodeEditor)
     });
 
     editor.addAction({
-        id: 'emmet.decrement-number1',
+        id: 'emmet.decrement-number10',
         label: 'Emmet: Decrement number by 10',
         // keybindings: [KeyMod.Ctrl | KeyCode.DownArrow],
         run(editor) {
             incrementNumberAction(editor, -10);
         }
+    });
+
+    editor.addAction({
+        id: 'emmet.remove-tag',
+        label: 'Emmet: Remove tag',
+        keybindings: [KeyMod.Ctrl | KeyCode.US_QUOTE],
+        run: removeTagAction
     });
 }

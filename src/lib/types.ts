@@ -2,6 +2,8 @@ import type * as monaco from 'monaco-editor';
 
 export const PluginID = 'emmet';
 export type Editor = monaco.editor.ICodeEditor;
+export type EditOperation = monaco.editor.IIdentifiedSingleEditOperation;
+export type Selection = monaco.Selection;
 
 export const enum MonacoID {
     SnippetController = 'snippetController2'

@@ -1,69 +1,96 @@
 import { TextRange } from '@emmetio/action-utils';
-import { getTagContext, ContextTag } from '../lib/emmet';
-import { narrowToNonSpace, isSpace as isSpaceText, replaceWithSnippet, substr, rangeEmpty } from '../lib/utils';
+import { getTagContext, ContextTag } from '../lib/plugin';
+import { narrowToNonSpace, isSpace as isSpaceText, substr, textRangeEmpty, toRange } from '../lib/utils';
 import { lineIndent } from '../lib/output';
+import { Editor, EditOperation, Selection } from '../lib/types';
 
-export default function removeTagCommand(editor: CodeMirror.Editor) {
-    editor.operation(() => {
-        const nextRanges = editor.listSelections().slice().reverse().map(sel => {
-            const tag = getTagContext(editor, editor.indexFromPos(sel.anchor));
-            if (tag) {
-                removeTag(editor, tag);
-                const pos = editor.posFromIndex(tag.open[0]);
-                return {
-                    anchor: pos,
-                    head: pos
-                };
-            }
+export default function removeTagCommand(editor: Editor): void {
+    const sels = editor.getSelections();
+    const model = editor.getModel();
 
-            return sel;
-        });
+    if (!sels || !model) {
+        return;
+    }
 
-        editor.setSelections(nextRanges);
+    let edits: EditOperation[] = [];
+    const nextRanges: Selection[] = sels.map(sel => {
+        const pt = model.getOffsetAt(sel.getStartPosition());
+        const tag = getTagContext(editor, pt);
+        if (tag) {
+            edits = edits.concat(removeTag(editor, tag));
+            const pos = model.getPositionAt(tag.open[0]);
+            return sel.setStartPosition(pos.lineNumber, pos.column)
+                .setEndPosition(pos.lineNumber, pos.column);
+        }
+
+        return sel;
     });
+
+    if (edits.length) {
+        editor.executeEdits(null, edits, nextRanges);
+    }
 }
 
-function removeTag(editor: CodeMirror.Editor, { open, close }: ContextTag) {
-    if (close) {
+function removeTag(editor: Editor, { open, close }: ContextTag): EditOperation[] {
+    const result: EditOperation[] = [];
+    const model = editor.getModel();
+
+    if (close && model) {
         // Remove open and close tag and dedent inner content
         const innerRange = narrowToNonSpace(editor, [open[1], close[0]]);
-        if (!rangeEmpty(innerRange)) {
+        if (!textRangeEmpty(innerRange)) {
             // Gracefully remove open and close tags and tweak indentation on tag contents
-            replaceWithSnippet(editor, [innerRange[1], close[1]], '');
+            result.push({
+                text: '',
+                range: toRange(editor, [innerRange[1], close[1]])
+            });
 
-            const start = editor.posFromIndex(open[0]);
-            const end = editor.posFromIndex(close[1]);
-            if (start.line !== end.line) {
+            const start = model.getPositionAt(open[0]);
+            const end = model.getPositionAt(close[1]);
+            if (start.lineNumber !== end.lineNumber) {
                 // Skip two lines: first one for open tag, on second one
                 // indentation will be removed with open tag
-                let line = start.line + 2;
+                let line = start.lineNumber + 2;
                 const baseIndent = getLineIndent(editor, open[0]);
                 const innerIndent = getLineIndent(editor, innerRange[0]);
 
-                while (line <= end.line) {
-                    const lineStart = editor.indexFromPos({ line, ch: 0 });
+                while (line <= end.lineNumber) {
+                    const lineStart = model.getOffsetAt({ lineNumber: line, column: 1 });
                     const indentRange: TextRange = [lineStart, lineStart + innerIndent.length];
                     if (isSpaceText(substr(editor, indentRange))) {
-                        console.log('replace "%s" with "%s"', substr(editor, indentRange), baseIndent);
-                        replaceWithSnippet(editor, indentRange, baseIndent);
+                        result.push({
+                            range: toRange(editor, indentRange),
+                            text: baseIndent
+                        });
                     }
                     line++;
                 }
             }
 
-            replaceWithSnippet(editor, [open[0], innerRange[0]], '');
+            result.push({
+                range: toRange(editor, [open[0], innerRange[0]]),
+                text: ''
+            });
         } else {
-            replaceWithSnippet(editor, [open[0], close[1]], '');
+            result.push({
+                range: toRange(editor, [open[0], close[1]]),
+                text: ''
+            });
         }
     } else {
-        replaceWithSnippet(editor, open, '');
+        result.push({
+            range: toRange(editor, open),
+            text: ''
+        });
     }
+
+    return result;
 }
 
 /**
  * Returns indentation for line found from given character location
  */
-function getLineIndent(editor: CodeMirror.Editor, ix: number): string {
-    return lineIndent(editor, editor.posFromIndex(ix).line);
+function getLineIndent(editor: Editor, ix: number): string {
+    const model = editor.getModel()!;
+    return lineIndent(editor, model.getPositionAt(ix).lineNumber);
 }
-

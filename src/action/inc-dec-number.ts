@@ -1,9 +1,8 @@
-import type * as monaco from 'monaco-editor';
 import { isNumber } from '@emmetio/scanner';
-import { Editor } from '../lib/types';
+import { Editor, EditOperation, Selection } from '../lib/types';
 
 export default function incrementNumber(editor: Editor, delta = 1): void {
-    const edits: monaco.editor.IIdentifiedSingleEditOperation[] = [];
+    const edits: EditOperation[] = [];
 
     const sels = editor.getSelections();
     const model = editor.getModel();
@@ -11,7 +10,7 @@ export default function incrementNumber(editor: Editor, delta = 1): void {
         return;
     }
 
-    const nextSelections: monaco.Selection[] = sels.map(sel => {
+    const nextSelections: Selection[] = sels.map(sel => {
         if (sel.isEmpty()) {
             // No selection, extract number
             const line = model.getLineContent(sel.startLineNumber);
