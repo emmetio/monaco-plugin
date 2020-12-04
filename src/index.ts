@@ -6,6 +6,7 @@ import { balanceActionInward, balanceActionOutward } from './action/balance';
 import commentAction from './action/comment';
 import evaluateMathAction from './action/evaluate-math';
 import goToEditPointAction from './action/go-to-edit-point';
+import goToTagPairAction from './action/go-to-tag-pair';
 
 // TODO find better solution to re-use Monaco keys but not re-export entire bundle
 const enum KeyMod {
@@ -68,5 +69,12 @@ export default function emmetPlugin(editor: monaco.editor.IStandaloneCodeEditor)
         run(editor) {
             return goToEditPointAction(editor, -1);
         }
+    });
+
+    editor.addAction({
+        id: 'emmet.tag-pair',
+        label: 'Emmet: Go to Tag Pair',
+        keybindings: [KeyMod.Ctrl | KeyCode.KEY_G],
+        run: goToTagPairAction
     });
 }
