@@ -5,6 +5,7 @@ import expandAction from './action/expand-abbreviation';
 import { balanceActionInward, balanceActionOutward } from './action/balance';
 import commentAction from './action/comment';
 import evaluateMathAction from './action/evaluate-math';
+import goToEditPointAction from './action/go-to-edit-point';
 
 // TODO find better solution to re-use Monaco keys but not re-export entire bundle
 const enum KeyMod {
@@ -49,5 +50,23 @@ export default function emmetPlugin(editor: monaco.editor.IStandaloneCodeEditor)
         label: 'Emmet: Evaluate Math Expression',
         keybindings: [KeyMod.Ctrl | KeyCode.KEY_Y],
         run: evaluateMathAction
+    });
+
+    editor.addAction({
+        id: 'emmet.next-edit-point',
+        label: 'Emmet: Next Edit Point',
+        keybindings: [KeyMod.Ctrl | KeyCode.RightArrow],
+        run(editor) {
+            return goToEditPointAction(editor, 1);
+        }
+    });
+
+    editor.addAction({
+        id: 'emmet.prev-edit-point',
+        label: 'Emmet: Previous Edit Point',
+        keybindings: [KeyMod.Ctrl | KeyCode.LeftArrow],
+        run(editor) {
+            return goToEditPointAction(editor, -1);
+        }
     });
 }
