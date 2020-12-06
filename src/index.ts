@@ -11,6 +11,7 @@ import incrementNumberAction from './action/inc-dec-number';
 import removeTagAction from './action/remove-tag';
 import selectItemAction from './action/select-item';
 import splitJoinTagAction from './action/split-join-tag';
+import wrapWithAbbreviationAction from './action/wrap-with-abbreviation';
 
 // TODO find better solution to re-use Monaco keys but not re-export entire bundle
 const enum KeyMod {
@@ -166,5 +167,12 @@ export default function emmetPlugin(editor: monaco.editor.IStandaloneCodeEditor)
         label: 'Emmet: Split/Join Tag',
         keybindings: [KeyMod.Ctrl | KeyMod.Shift | KeyCode.US_QUOTE],
         run: splitJoinTagAction
+    });
+
+    editor.addAction({
+        id: 'emmet.wrap-with-abbreviation',
+        label: 'Emmet: Wrap With Abbreviation',
+        keybindings: [KeyMod.Alt | KeyCode.KEY_W],
+        run: wrapWithAbbreviationAction
     });
 }

@@ -1,23 +1,32 @@
+import type * as monaco from 'monaco-editor';
 import { TextRange } from '@emmetio/action-utils';
-import { getOptions, getTagContext, ContextTag, expand } from '../lib/emmet';
-import { getCaret, narrowToNonSpace, replaceWithSnippet, substr, errorSnippet, textRange } from '../lib/utils';
+import { getOptions, getTagContext, ContextTag, expandAbbreviation } from '../lib/plugin';
+import { getCaret, narrowToNonSpace, replaceWithSnippet, substr, errorSnippet, toTextRange } from '../lib/utils';
 import { docSyntax, isXML } from '../lib/syntax';
 import { lineIndent } from '../lib/output';
+import { Editor } from '../lib/types';
 
 const baseClass = 'emmet-panel';
 const errClass = 'emmet-error';
 
-export default function wrapWithAbbreviation(editor: CodeMirror.Editor) {
+export default function wrapWithAbbreviation(editor: Editor): void {
     const syntax = docSyntax(editor);
     const caret = getCaret(editor);
     const context = getTagContext(editor, caret, isXML(syntax));
     const wrapRange = getWrapRange(editor, getSelection(editor), context);
+    console.log('wap range', {
+        wrapRange,
+        text: substr(editor, wrapRange)
+    });
+
     const options = getOptions(editor, wrapRange[0]);
     options.text = getContent(editor, wrapRange, true);
+    console.log('opt', options);
+
 
     let panel = createInputPanel();
-    let input = panel.querySelector('input')!;
-    let errContainer = panel.querySelector(`.${baseClass}-error`)!;
+    let input = panel.getDomNode().querySelector('input')!;
+    let errContainer = panel.getDomNode().querySelector(`.${baseClass}-error`)!;
     let updated = false;
 
     function onInput(evt: InputEvent) {
@@ -29,20 +38,22 @@ export default function wrapWithAbbreviation(editor: CodeMirror.Editor) {
         }
 
         try {
-            const snippet = expand(editor, abbr, options);
+            const snippet = expandAbbreviation(abbr, options);
+            console.log('expanded', snippet);
+
             replaceWithSnippet(editor, wrapRange, snippet);
             updated = true;
-            if (panel.classList.contains(errClass)) {
+            if (panel.getDomNode().classList.contains(errClass)) {
                 errContainer.innerHTML = '';
-                panel.classList.remove(errClass);
+                panel.getDomNode().classList.remove(errClass);
             }
         } catch (err) {
             updated = false;
-            panel.classList.add(errClass);
+            panel.getDomNode().classList.add(errClass);
             errContainer.innerHTML = errorSnippet(err);
             console.error(err);
         }
-    };
+    }
 
     function onKeyDown(evt: KeyboardEvent) {
         if (evt.keyCode === 27 /* ESC */) {
@@ -54,11 +65,12 @@ export default function wrapWithAbbreviation(editor: CodeMirror.Editor) {
             evt.preventDefault();
             submit();
         }
-    };
+    }
 
     function undo() {
         if (updated) {
-            editor.undo();
+            console.log('run undo');
+            editor.trigger(null, 'undo', null);
         }
     }
 
@@ -80,7 +92,8 @@ export default function wrapWithAbbreviation(editor: CodeMirror.Editor) {
         input.removeEventListener('paste', onInput);
         input.removeEventListener('keydown', onKeyDown);
         input.removeEventListener('blur', cancel);
-        panel.remove();
+        editor.removeOverlayWidget(panel);
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore Dispose element references
         panel = input = errContainer = null;
     }
@@ -92,21 +105,33 @@ export default function wrapWithAbbreviation(editor: CodeMirror.Editor) {
     input.addEventListener('change', onInput);
     input.addEventListener('paste', onInput);
     input.addEventListener('keydown', onKeyDown);
-    editor.getWrapperElement().appendChild(panel);
+    editor.addOverlayWidget(panel);
     input.focus();
 }
 
-function createInputPanel(): HTMLElement {
+function createInputPanel(): monaco.editor.IOverlayWidget {
     const elem = document.createElement('div');
     elem.className = baseClass;
     elem.innerHTML = `<div class="${baseClass}-wrapper">
         <input type="text" placeholder="Enter abbreviation" autofocus />
         <div class="${baseClass}-error"></div>
     </div>`;
-    return elem;
+    return {
+        getDomNode() {
+            return elem;
+        },
+        getId() {
+            return 'emmet-input-panel';
+        },
+        getPosition() {
+            return {
+                preference: 0 /* TOP_RIGHT_CORNER */
+            };
+        }
+    };
 }
 
-function getWrapRange(editor: CodeMirror.Editor, range: TextRange, context?: ContextTag): TextRange {
+function getWrapRange(editor: Editor, range: TextRange, context?: ContextTag): TextRange {
     if (range[0] === range[1] && context) {
         // No selection means user wants to wrap current tag container
         const { open, close } = context;
@@ -131,9 +156,10 @@ function getWrapRange(editor: CodeMirror.Editor, range: TextRange, context?: Con
 /**
  * Returns contents of given region, properly de-indented
  */
-function getContent(editor: CodeMirror.Editor, range: TextRange, lines = false): string | string[] {
-    const pos = editor.posFromIndex(range[0]);
-    const baseIndent = lineIndent(editor, pos.line);
+function getContent(editor: Editor, range: TextRange, lines = false): string | string[] {
+    const model = editor.getModel()!;
+    const pos = model.getPositionAt(range[0]);
+    const baseIndent = lineIndent(editor, pos.lineNumber);
     const srcLines = substr(editor, range).split('\n');
     const destLines = srcLines.map(line => {
         return line.startsWith(baseIndent)
@@ -148,6 +174,6 @@ function inRange(range: TextRange, pt: number): boolean {
     return range[0] < pt && pt < range[1];
 }
 
-function getSelection(editor: CodeMirror.Editor): TextRange {
-    return textRange(editor, editor.listSelections()[0]);
+function getSelection(editor: Editor): TextRange {
+    return toTextRange(editor, editor.getSelection()!);
 }

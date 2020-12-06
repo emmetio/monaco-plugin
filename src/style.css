@@ -1,0 +1,100 @@
+/** Input panel fow Wrap With Abbreviation */
+
+.emmet-panel {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    width: 100%;
+    animation: emmet-panel-show 0.2s ease-out;
+}
+
+.emmet-panel-wrapper {
+    width: 60%;
+    min-width: 100px;
+    max-width: 500px;
+    padding: 10px;
+    background: #ffffff;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
+}
+
+.emmet-panel-wrapper input {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: Jetbrains Mono, Fira Code, Consolas, monospace;
+    font-size: 12px;
+}
+
+/* Snippet with abbreviation error */
+
+.emmet-error-snippet {
+    color: red;
+}
+
+.emmet-error-snippet-ptr {
+    position: absolute;
+}
+
+.emmet-error-snippet-spacer {
+    white-space: pre;
+}
+
+.emmet-error-snippet-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: -5px;
+    border-top: 2px solid currentColor;
+}
+
+.emmet-error-snippet-tip {
+    width: 10px;
+    height: 7px;
+    overflow: hidden;
+    position: absolute;
+    right: -10px;
+    top: -5px;
+}
+
+.emmet-error-snippet-tip::before {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 4px;
+    width: 10px;
+    height: 10px;
+    transform: rotate(45deg);
+    background: currentColor;
+}
+
+.emmet-error-snippet-message {
+    padding-top: 10px;
+    font-size: 11px;
+}
+
+.emmet-open-tag, .emmet-close-tag {
+    text-decoration: underline;
+}
+
+.emmet-tag-preview {
+    background: #117700;
+    color: #ffffff;
+    border-radius: 2px;
+    padding: 2px 4px;
+    font-size: 0.8em;
+    opacity: 0.6;
+    margin-top: -16px;
+    margin-left: 2px;
+}
+
+@keyframes emmet-panel-show {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+}
