@@ -1,7 +1,7 @@
 import type * as monaco from 'monaco-editor';
 import { AttributeToken } from '@emmetio/html-matcher';
 import { CSSProperty, TextRange } from '@emmetio/action-utils';
-import { Editor, MonacoID, SnippetController2 } from './types';
+import { Editor, MonacoID, Selection, SnippetController2 } from './types';
 
 export interface AbbrError {
     message: string,
@@ -332,4 +332,18 @@ export function errorSnippet(err: AbbrError, baseClass = 'emmet-error-snippet'):
  */
 export function last<T>(arr: T[]): T | undefined {
     return arr.length > 0 ? arr[arr.length - 1] : undefined;
+}
+
+/**
+ * Collapses given selection to a single position, specified as character offset
+ */
+export function updateSelection(editor: Editor, sel: Selection, pos: number): Selection {
+    const model = editor.getModel()!
+    const p = model.getPositionAt(pos);
+    // XXX Better solution would be to use `new monaco.Selection()` to create
+    // a new instance but it will complicate plugin bundling since it will require
+    // external `monaco-editor` dependency to be feeded somehow into plugin
+    return sel
+        .setEndPosition(p.lineNumber, p.column)
+        .setStartPosition(p.lineNumber, p.column)
 }

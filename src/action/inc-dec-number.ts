@@ -16,12 +16,10 @@ export default function incrementNumber(editor: Editor, delta = 1): void {
             const line = model.getLineContent(sel.startLineNumber);
             const offset = sel.startColumn - 1;
             const numRange = extractNumber(line, offset);
-            console.log('num range', numRange);
 
             if (numRange) {
                 sel = sel.setStartPosition(sel.startLineNumber, numRange[0] + 1);
                 sel = sel.setEndPosition(sel.endLineNumber, numRange[1] + 1);
-                console.log('modified sel', sel);
             }
         }
 

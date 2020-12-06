@@ -1,59 +1,70 @@
 import { isXML, syntaxInfo } from '../lib/syntax';
-import { getTagContext } from '../lib/emmet';
-import { isSpace, substr, replaceWithSnippet, CMRange } from '../lib/utils';
+import { getTagContext } from '../lib/plugin';
+import { getContent, isSpace, toRange, updateSelection } from '../lib/utils';
+import { Editor, EditOperation, Selection } from '../lib/types';
 
-export default function splitJoinTag(editor: CodeMirror.Editor) {
-    const selections = editor.listSelections().slice().reverse();
-    const nextRanges: CMRange[] = [];
+export default function splitJoinTag(editor: Editor): void {
+    const selections = editor.getSelections();
+    const model = editor.getModel();
 
-    editor.operation(() => {
-        for (const sel of selections) {
-            const pos = editor.indexFromPos(sel.anchor);
-            const { syntax } = syntaxInfo(editor, pos);
-            const tag = getTagContext(editor, pos, isXML(syntax));
+    if (!model || !selections) {
+        return ;
+    }
 
-            if (tag) {
-                const { open, close } = tag;
-                if (close) {
-                    // Join tag: remove tag contents, if any, and add closing slash
-                    replaceWithSnippet(editor, [open[1], close[1]], '');
-                    let closing = isSpace(getChar(editor, open[1] - 2)) ? '/' : ' /';
-                    replaceWithSnippet(editor, [open[1] - 1, open[1] - 1], closing);
-                    nextRanges.push(createRange(editor, open[1] + closing.length));
-                } else {
-                    // Split tag: add closing part and remove closing slash
-                    const endTag = `</${tag.name}>`;
+    const content = getContent(editor);
+    const edits: EditOperation[] = [];
+    const nextSelections: Selection[] = selections.map(sel => {
+        const pt = model.getOffsetAt(sel.getStartPosition());
+        const { syntax } = syntaxInfo(editor, pt);
+        const tag = getTagContext(editor, pt, isXML(syntax));
 
-                    replaceWithSnippet(editor, [open[1], open[1]], endTag);
-                    if (getChar(editor, open[1] - 2) === '/') {
-                        let start = open[1] - 2;
-                        let end = open[1] - 1;
-                        if (isSpace(getChar(editor, start - 1))) {
-                            start--;
-                        }
+        if (tag) {
+            const { open, close } = tag;
+            if (close) {
+                // Join tag: remove tag contents, if any, and add closing slash
+                const closing = isSpace(content[open[1] - 2]) ? '/' : ' /';
+                edits.push({
+                    range: toRange(editor, [open[1], close[1]]),
+                    text: ''
+                }, {
+                    range: toRange(editor, [open[1] - 1, open[1] - 1]),
+                    text: closing
+                });
 
-                        replaceWithSnippet(editor, [start, end], '');
-                        nextRanges.push(createRange(editor, open[1] - end + start));
-                    } else {
-                        nextRanges.push(createRange(editor, open[1]));
-                    }
-                }
-            } else {
-                nextRanges.push(sel);
+                sel = updateSelection(editor, sel, open[1] + closing.length);
+                return sel;
             }
+
+            // Split tag: add closing part and remove closing slash
+            const endTag = `</${tag.name}>`;
+
+            edits.push({
+                range: toRange(editor, [open[1], open[1]]),
+                text: endTag
+            });
+
+            if (content[open[1] - 2] === '/') {
+                let start = open[1] - 2;
+                const end = open[1] - 1;
+                if (isSpace(content[start - 1])) {
+                    start--;
+                }
+
+                edits.push({
+                    range: toRange(editor, [start, end]),
+                    text: ''
+                });
+
+                return updateSelection(editor, sel, open[1] - end + start);
+            }
+
+            return updateSelection(editor, sel, open[1]);
         }
-        editor.setSelections(nextRanges);
+
+        return sel;
     });
-}
 
-function getChar(editor: CodeMirror.Editor, pos: number): string {
-    return substr(editor, [pos, pos + 1]);
-}
-
-function createRange(editor: CodeMirror.Editor, pos: number): CMRange {
-    const p = editor.posFromIndex(pos);
-    return {
-        anchor: p,
-        head: p
-    };
+    if (edits.length) {
+        editor.executeEdits(null, edits, nextSelections);
+    }
 }

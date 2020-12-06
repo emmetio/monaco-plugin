@@ -1,6 +1,6 @@
 import { TextRange } from '@emmetio/action-utils';
 import { getTagContext, ContextTag } from '../lib/plugin';
-import { narrowToNonSpace, isSpace as isSpaceText, substr, textRangeEmpty, toRange } from '../lib/utils';
+import { narrowToNonSpace, isSpace as isSpaceText, substr, textRangeEmpty, toRange, updateSelection } from '../lib/utils';
 import { lineIndent } from '../lib/output';
 import { Editor, EditOperation, Selection } from '../lib/types';
 
@@ -18,9 +18,7 @@ export default function removeTagCommand(editor: Editor): void {
         const tag = getTagContext(editor, pt);
         if (tag) {
             edits = edits.concat(removeTag(editor, tag));
-            const pos = model.getPositionAt(tag.open[0]);
-            return sel.setStartPosition(pos.lineNumber, pos.column)
-                .setEndPosition(pos.lineNumber, pos.column);
+            return updateSelection(editor, sel, tag.open[0]);
         }
 
         return sel;
