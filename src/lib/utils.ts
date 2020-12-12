@@ -8,6 +8,11 @@ export interface AbbrError {
     pos: number
 }
 
+interface ReplaceParams {
+    selections?: monaco.Selection[] | null;
+    skipUndo?: boolean
+}
+
 export type DisposeFn = () => void;
 
 export const pairs = {
@@ -43,11 +48,34 @@ export function narrowToNonSpace(editor: Editor, range: TextRange): TextRange {
 /**
  * Replaces given range in editor with snippet contents
  */
-export function replaceWithSnippet(editor: Editor, range: TextRange, snippet: string): void {
+export function replaceWithSnippet(editor: Editor, range: TextRange, snippet: string, params?: Partial<ReplaceParams>): void {
+    const model = editor.getModel()!;
     const controller = editor.getContribution(MonacoID.SnippetController) as SnippetController2;
+    const selections = params?.selections || editor.getSelections();
+    const pushUndo = !params?.skipUndo;
+
+    let destSel = editor.getSelection();
+    if (destSel) {
+        destSel = updateSelection(editor, destSel, range[0]);
+    }
+
+    if (pushUndo) {
+        model.pushStackElement();
+    }
+
+    model.pushEditOperations(selections, [{
+        text: '',
+        range: toRange(editor, range)
+    }], () => destSel ? [destSel] : null);
+
     controller.insert(snippet, {
-        overwriteBefore: range[1] - range[0]
+        undoStopAfter: false,
+        undoStopBefore: false
     });
+
+    if (pushUndo) {
+        model.pushStackElement();
+    }
 }
 
 /**

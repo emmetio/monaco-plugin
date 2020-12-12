@@ -1,7 +1,7 @@
 import type * as monaco from 'monaco-editor';
 import { TextRange } from '@emmetio/action-utils';
 import { getOptions, getTagContext, ContextTag, expandAbbreviation } from '../lib/plugin';
-import { getCaret, narrowToNonSpace, replaceWithSnippet, substr, errorSnippet, toTextRange } from '../lib/utils';
+import { getCaret, narrowToNonSpace, substr, errorSnippet, toTextRange, replaceWithSnippet } from '../lib/utils';
 import { docSyntax, isXML } from '../lib/syntax';
 import { lineIndent } from '../lib/output';
 import { Editor } from '../lib/types';
@@ -14,15 +14,10 @@ export default function wrapWithAbbreviation(editor: Editor): void {
     const caret = getCaret(editor);
     const context = getTagContext(editor, caret, isXML(syntax));
     const wrapRange = getWrapRange(editor, getSelection(editor), context);
-    console.log('wap range', {
-        wrapRange,
-        text: substr(editor, wrapRange)
-    });
+    const selections = editor.getSelections();
 
     const options = getOptions(editor, wrapRange[0]);
     options.text = getContent(editor, wrapRange, true);
-    console.log('opt', options);
-
 
     let panel = createInputPanel();
     let input = panel.getDomNode().querySelector('input')!;
@@ -39,9 +34,7 @@ export default function wrapWithAbbreviation(editor: Editor): void {
 
         try {
             const snippet = expandAbbreviation(abbr, options);
-            console.log('expanded', snippet);
-
-            replaceWithSnippet(editor, wrapRange, snippet);
+            replaceWithSnippet(editor, wrapRange, snippet, { selections });
             updated = true;
             if (panel.getDomNode().classList.contains(errClass)) {
                 errContainer.innerHTML = '';
@@ -69,8 +62,12 @@ export default function wrapWithAbbreviation(editor: Editor): void {
 
     function undo() {
         if (updated) {
-            console.log('run undo');
-            editor.trigger(null, 'undo', null);
+            // https://github.com/microsoft/monaco-editor/issues/451
+            // The issue above states that undo command should be triggered
+            // via `editor.trigger()`, however, it doesn’t work since there’s
+            // no "undo" command. So we’ll use “unofficial” way to trigger undo
+            const model = editor.getModel()!;
+            model['undo']();
         }
     }
 
