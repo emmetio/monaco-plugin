@@ -8,7 +8,7 @@ export default function evaluateMathCommand(editor: Editor): void {
         const line = model.getLineContent(pos.lineNumber);
         const expr = evaluateMath(line, pos.column - 1);
         if (expr) {
-            model.applyEdits([{
+            editor.executeEdits('emmetEvaluateMath', [{
                 range: {
                     startLineNumber: pos.lineNumber,
                     startColumn: expr.start + 1,
@@ -17,6 +17,7 @@ export default function evaluateMathCommand(editor: Editor): void {
                 },
                 text: expr.snippet,
             }]);
+            editor.pushUndoStop();
         }
     }
 }

@@ -38,7 +38,8 @@ export default function incrementNumber(editor: Editor, delta = 1): void {
     });
 
     if (edits.length) {
-        editor.executeEdits(null, edits, nextSelections);
+        editor.executeEdits('emmetIncrementNumber', edits, nextSelections);
+        editor.pushUndoStop();
     }
 }
 

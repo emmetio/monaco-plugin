@@ -31,7 +31,14 @@ export default function splitJoinTag(editor: Editor): void {
                     text: closing
                 });
 
-                sel = updateSelection(editor, sel, open[1] + closing.length);
+                // Do not use `updateSelection` here since it will resolve to invalid
+                // location before actual updates are applied
+                // sel = updateSelection(editor, sel, open[1] + closing.length);
+                const p = model.getPositionAt(open[1]);
+                sel = sel
+                    .setEndPosition(p.lineNumber, p.column + closing.length)
+                    .setStartPosition(p.lineNumber, p.column + closing.length);
+
                 return sel;
             }
 
@@ -65,6 +72,7 @@ export default function splitJoinTag(editor: Editor): void {
     });
 
     if (edits.length) {
-        editor.executeEdits(null, edits, nextSelections);
+        editor.executeEdits('emmetSplitJoinTag', edits, nextSelections);
+        editor.pushUndoStop();
     }
 }

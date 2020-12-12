@@ -78,13 +78,14 @@ function removeComment(editor: Editor, { range, commentStart, commentEnd }: Bloc
             endOffset += 1;
         }
 
-        editor.executeEdits(null, [{
+        editor.executeEdits('emmetRemoveComment', [{
             range: toRange(editor, [range[1] - endOffset, range[1]]),
             text: ''
         }, {
             range: toRange(editor, [range[0], range[0] + startOffset]),
             text: ''
         }]);
+        editor.pushUndoStop();
 
         return startOffset + endOffset;
     }
@@ -97,13 +98,14 @@ function removeComment(editor: Editor, { range, commentStart, commentEnd }: Bloc
  */
 function addComment(editor: Editor, range: TextRange, tokens: CommentTokens): void {
     const [from, to] = range;
-    editor.executeEdits(null, [{
+    editor.executeEdits('emmetAddComment', [{
         range: toRange(editor, [to, to]),
         text: ' ' + tokens[1]
     }, {
         range: toRange(editor, [from, from]),
         text: tokens[0] + ' '
-    }])
+    }]);
+    editor.pushUndoStop();
 }
 
 /**

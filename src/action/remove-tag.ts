@@ -25,7 +25,8 @@ export default function removeTagCommand(editor: Editor): void {
     });
 
     if (edits.length) {
-        editor.executeEdits(null, edits, nextRanges);
+        editor.executeEdits('emmetRemoveTag', edits, nextRanges);
+        editor.pushUndoStop();
     }
 }
 
